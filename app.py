@@ -1,6 +1,8 @@
 import streamlit as st
 #python-dotenv
+import sys
 from dotenv import load_dotenv
+#import dotenv
 import getpass
 import os
 
@@ -9,12 +11,12 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.memory import ConversationBufferMemory
-from langchain.chains.history_aware_retriever import  create_history_aware_retriever
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+#from langchain.chains.history_aware_retriever import  create_history_aware_retriever
+#from langchain.chains.retrieval import create_retrieval_chain
+#from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
-from langchain_chroma import Chroma
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+#from langchain_chroma import Chroma
+#from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from htmlTemplates import css, bot_template, user_template
 #langchain_core
 #streamlit run app.py
@@ -68,8 +70,13 @@ def handle_userinput(user_question):
 
 def main():
     load_dotenv()
-    if not os.environ.get("OPENAI_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = getpass.getpass()
+    #OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    #OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_API_KEY = os.environ["OPENAI_API_KEY"] 
+    #print(os.getenv("OPENAI_API_KEY"))
+    #os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+    #if not os.environ.get("OPENAI_API_KEY"):
+    #    os.environ["OPENAI_API_KEY"] = os.getenv('OPENAI_API_KEY')
     
     
 
