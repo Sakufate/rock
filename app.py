@@ -12,6 +12,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains.history_aware_retriever import  create_history_aware_retriever
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from htmlTemplates import css, bot_template, user_template
@@ -49,19 +50,28 @@ def get_vectorstore(text_chunks):
     return vectorstore
 
 def get_conversation_chain(vectorstore):
+    #llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+    llm = ChatOpenAI()
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-    return memory
+    conversation_chan = ConversationalRetrievalChain.from_llm(llm = llm, retriever = vectorstore.as_retriever(), memory = memory)   
+    return conversation_chan
 
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
-    st.write(response)
+    st.session_state.chat_history = response['chat_history']
+
+    for i, message in enumerate(st.session_state.chat_history):
+        if 1 % 2 == 0:
+            st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+        else:
+            st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
 
 def main():
     load_dotenv()
     if not os.environ.get("OPENAI_API_KEY"):
         os.environ["OPENAI_API_KEY"] = getpass.getpass()
-    #llm = ChatOpenAI()
-    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+    
+    
 
     st.set_page_config(page_title="Scan knowledge base", page_icon=":books:")
 
@@ -70,13 +80,14 @@ def main():
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
 
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = None
+
     st.header("Scan knwoledge base :books:")
     user_question = st.text_input("Input the question for the knowledge base")
     if user_question:
         handle_userinput(user_question)
 
-    st.write(user_template.replace("{{MSG}}", "hello robot"), unsafe_allow_html=True)
-    st.write(bot_template.replace("{{MSG}}", "hello human"), unsafe_allow_html=True)
 
     with st.sidebar:
         st.subheader("Knowledge base documents")
@@ -90,49 +101,9 @@ def main():
                 
                 # create vector store
                 vectorstore = get_vectorstore(text_chunks)
-                #vectorstore = Chroma.from_documents(documents=text_chunks, embedding=OpenAIEmbeddings())
-                retriever = vectorstore.as_retriever()
-            
 
                 # create conversation chain
-                #conversation = get_conversation_chain(vectorstore)
-                
-
-                ### Contextualize question ###
-                contextualize_q_system_prompt = """Given a chat history and the latest user question \
-                which might reference context in the chat history, formulate a standalone question \
-                which can be understood without the chat history. Do NOT answer the question, \
-                just reformulate it if needed and otherwise return it as is."""
-                contextualize_q_prompt = ChatPromptTemplate.from_messages(
-                    [
-                        ("system", contextualize_q_system_prompt),
-                        MessagesPlaceholder("chat_history"),
-                        ("human", "{input}"),
-                    ]
-                )
-                history_aware_retriever = create_history_aware_retriever(
-                    llm, retriever, contextualize_q_prompt
-                )
-
-
-                ### Answer question ###
-                qa_system_prompt = """You are an assistant for question-answering tasks. \
-                Use the following pieces of retrieved context to answer the question. \
-                If you don't know the answer, just say that you don't know. \
-                Use three sentences maximum and keep the answer concise.\
-
-                {context}"""
-                qa_prompt = ChatPromptTemplate.from_messages(
-                    [
-                        ("system", qa_system_prompt),
-                        MessagesPlaceholder("chat_history"),
-                        ("human", "{input}"),
-                    ]
-                )
-                question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
-                #rag_chain
-                st.session_state.conversation = create_retrieval_chain(history_aware_retriever, question_answer_chain)["answer"]
-   # st.session_state.conversation
+                st.session_state.conversation = get_conversation_chain(vectorstore)
 
 
 if __name__ == '__main__':
