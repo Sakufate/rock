@@ -6,3 +6,4 @@ langchain-community
 python-dotenv
 faiss-cpu
 openai
+langchain_openai 
