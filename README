@@ -1,2 +1,2 @@
-readme to give instructions
-sasasasa
+Check .env.example for template for the .env file.
+Input the neccessary api key to the file before running container.
